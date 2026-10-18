@@ -1,0 +1,311 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>일요일 낮술 뽑기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: one centered "drinking ticket" card, steps swap inside it; result rendered to canvas */
+:root{
+  --bg:#fff5c8; --paper:#fffdf3; --ink:#3a2a22; --muted:#8a7366;
+  --soju:#3fae7a; --soju-soft:#e3f5e4; --peach:#f26b45; --peach-soft:#ffe1cf;
+  --line:#f2e3a6; --shadow:rgba(120,70,40,.14);
+  --display:"Gaegu","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#26231a; --paper:#322e22; --ink:#f6e9dc; --muted:#bba595;
+  --soju:#5fd19b; --soju-soft:#21382c; --peach:#ff9f80; --peach-soft:#46302a;
+  --line:#4d4630; --shadow:rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#26231a; --paper:#322e22; --ink:#f6e9dc; --muted:#bba595;
+  --soju:#5fd19b; --soju-soft:#21382c; --peach:#ff9f80; --peach-soft:#46302a;
+  --line:#4d4630; --shadow:rgba(0,0,0,.4); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px;
+  background-image:radial-gradient(var(--line) 1.2px,transparent 1.2px);background-size:22px 22px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+header canvas{width:84px;height:84px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,7vw,40px);margin:0;line-height:1.1;text-wrap:balance}
+.sub{color:var(--muted);margin:0}
+.ticket{background:var(--paper);border:2px solid var(--line);border-radius:22px;box-shadow:0 8px 0 var(--shadow);padding:22px 20px;display:flex;flex-direction:column;gap:16px}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;min-height:28px}
+.crumb{font-family:var(--display);font-weight:700;font-size:14px;background:var(--soju-soft);color:var(--soju);padding:3px 10px;border-radius:99px}
+h2{font-family:var(--display);font-weight:700;font-size:24px;margin:0;text-wrap:balance}
+.hint{color:var(--muted);font-size:14px;margin:-8px 0 0}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.opt{all:unset;box-sizing:border-box;cursor:pointer;background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:4px;transition:transform .12s,border-color .12s,background .12s}
+.opt:hover{transform:translateY(-2px);border-color:var(--peach)}
+.opt:focus-visible{outline:3px solid var(--soju);outline-offset:2px}
+.opt.sel{border-color:var(--soju);background:var(--soju-soft)}
+.opt .big{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.2}
+.opt .small{font-size:13px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:10px}
+.list .opt{flex-direction:row;align-items:flex-start;gap:12px}
+.list .opt .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.list .opt .name{font-family:var(--display);font-weight:700;font-size:19px}
+.tag{font-family:var(--body);font-size:12px;font-weight:700;background:var(--peach-soft);color:var(--peach);padding:1px 8px;border-radius:99px;vertical-align:3px;white-space:nowrap}
+.hours{font-variant-numeric:tabular-nums;font-size:13px;color:var(--soju);font-weight:700}
+.warn{color:var(--peach)}
+.num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--peach-soft);color:var(--peach);font-family:var(--display);display:grid;place-items:center;font-size:16px}
+input[type=text]{font:inherit;font-size:18px;width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=text]:focus{outline:none;border-color:var(--soju)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--display);font-size:18px;padding:12px 20px;border-radius:14px;background:var(--soju);color:#fff;text-align:center;flex:1;box-shadow:0 4px 0 var(--shadow)}
+.btn.ghost{background:transparent;color:var(--muted);border:2px solid var(--line);box-shadow:none;flex:0 0 auto}
+.btn:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
+.btn:active{transform:translateY(2px);box-shadow:none}
+#resultImg{width:100%;border-radius:18px;border:2px solid var(--line)}
+.note{font-size:12.5px;color:var(--muted);text-align:center;margin:0}
+.toast{font-size:14px;text-align:center;color:var(--soju);min-height:20px;margin:0}
+@media (prefers-reduced-motion:reduce){.opt{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <canvas id="mascot" width="168" height="168" aria-hidden="true"></canvas>
+    <h1>일요일 낮술 뽑기</h1>
+    <p class="sub">고양시 · 일요일 낮 12시 집합 · 어디서 뭐 먹을래?</p>
+  </header>
+  <section class="ticket" id="ticket" aria-live="polite"></section>
+  <p class="note">식당 영업시간은 구글 지도 기준이에요. 출발 전에 전화나 네이버로 한 번 더 확인하세요.</p>
+</div>
+
+<script>
+const PLACES = {
+  "한식":[
+    {t:"라페스타",n:"고두리김치생삼겹살",a:"일산동구 무궁화로 18",h:"11:30–15:00 / 16:00–01:00",d:"생삼겹·목살에 고랭지 김치, 볶음밥",w:"3시~4시 브레이크타임"},
+    {t:"라페스타",n:"삼보가든",a:"일산동구 장항동 (호수공원 옆)",h:"11:30–22:00",d:"구워 나오는 돼지갈비, 냉면"},
+    {t:"정발산",n:"몽화가락",a:"일산동구 정발산동",h:"12:00–22:00",d:"고깃집, 주말만 낮 영업"},
+    {t:"백석",n:"지미당 일산본점",a:"일산동구 백석동",h:"11:30–15:30 / 17:00–21:40",d:"매운 갈비찜 맛집",w:"3시반~5시 브레이크타임"},
+    {t:"백석",n:"제일정해물탕",a:"일산동구 백석동",h:"11:00–22:00",d:"전라도식 아구찜·해물탕, 볶음밥"},
+    {t:"화정",n:"정육식당 육국 고양화정점",a:"덕양구 화신로260번길 36",h:"12:00–24:00",d:"정육식당 소·돼지, 룸 있음"},
+    {t:"화정",n:"부산아구찜탕",a:"덕양구 화신로260번길 51, 2층",h:"11:00–24:00",d:"아구찜·해물찜, 매운맛 조절 가능"},
+    {t:"화정",n:"달려라뼈대장",a:"덕양구 화중로104번길 24",h:"24시간",d:"살 많은 감자탕, 뼈해장국"},
+    {t:"대화",n:"해송아구해물",a:"일산서구 일산로 684",h:"11:30–22:00",d:"양 많은 아구찜·해물찜, 볶음밥"},
+    {t:"덕이",n:"탤런트박철호의 덕이동주막",a:"일산서구 하이파크3로 10",h:"11:00–22:00",d:"보리밥, 쭈꾸미볶음, 동동주"}
+  ],
+  "중식":[
+    {t:"백석",n:"신현경 짬뽕천국",a:"일산동구 강송로87번길 37",h:"11:00–22:00",d:"차돌짬뽕, 찹쌀 꿔바로우"},
+    {t:"백석",n:"이비가짬뽕 고양백석점",a:"일산동구 중앙로 1079",h:"11:00–21:00",d:"짬뽕 + 탕수육 세트"},
+    {t:"백석",n:"창업마라탕",a:"일산동구 일산로 196, 2층",h:"10:00–22:00",d:"마라탕, 꿔바로우"},
+    {t:"화정",n:"하선생 화정역점",a:"화정역 광장 70m",h:"11:30–22:00",d:"황짬뽕, 간짜장, 탕수육"},
+    {t:"화정",n:"양꼬치전문점",a:"덕양구 화정동 900-13",h:"11:00–22:00",d:"양념 양꼬치, 가지튀김"},
+    {t:"주엽",n:"하이청 양고기&훠궈",a:"일산서구 주화로 76",h:"12:00–24:00",d:"양갈비, 양꼬치, 마라탕에 칭따오"},
+    {t:"일산",n:"북경마라샹궈",a:"일산서구 원일로 89",h:"11:00–23:00",d:"마라샹궈, 꿔바로우, 훠궈"},
+    {t:"일산",n:"샹츠마라 일산서구점",a:"일산서구 일산로 542",h:"11:30–15:00 / 16:00–21:30",d:"마라탕·마라샹궈",w:"3시~4시 브레이크타임"},
+    {t:"식사동",n:"탕수육",a:"일산동구 동국로 22-18",h:"11:00–21:00",d:"가게 이름이 곧 대표메뉴, 탕수육"}
+  ],
+  "일식":[
+    {t:"라페스타",n:"상무초밥 일산라페스타점",a:"일산동구 장항동",h:"11:00–21:30",d:"가성비 초밥 세트, 키오스크 주문"},
+    {t:"라페스타",n:"연모당",a:"라페스타 C동 102호",h:"11:00–20:30",d:"냉소바, 초밥, 새우·장어 튀김"},
+    {t:"웨스턴돔",n:"타마시 초밥",a:"일산동구 장항동 (웨스턴돔 앞)",h:"11:30–22:00",d:"초밥·사시미에 시원한 생맥주"},
+    {t:"웨스턴돔",n:"큐슈울트라아멘",a:"일산동구 장항동 (웨스턴돔 앞)",h:"11:00–21:00",d:"탄탄멘, 교자에 맥주"},
+    {t:"호수공원",n:"황제초밥",a:"백마로 195 그린존 1층",h:"11:00–15:00 / 17:00–21:30",d:"초밥·사시미에 맥주, 사케",w:"3시~5시 브레이크타임"},
+    {t:"대화",n:"갯마을 세꼬시",a:"일산서구 중앙로 1493",h:"12:00–22:00",d:"세꼬시·제철회, 물회"},
+    {t:"화정",n:"스시이안앤 화정역점",a:"덕양구 화신로272번길 38, 2층",h:"11:30–21:20",d:"회전초밥, 우니·안키모도 있음"},
+    {t:"화정",n:"쿠우쿠우 화정점",a:"덕양구 화정로 53",h:"11:30–21:00",d:"초밥 무한리필 뷔페",w:"주말 요금 더 비쌈"},
+    {t:"화정",n:"미소야 화정점",a:"덕양구 화중로 32-31",h:"11:00–22:00",d:"두툼한 돈카츠, 우동"},
+    {t:"화정",n:"금화왕돈까스 화정점",a:"덕양구 화수로 4",h:"11:00–20:30",d:"왕돈까스, 밥·샐러드 무한"}
+  ]
+};
+const HOMES = ["일하집","지연집"];
+const MENUS = [
+  {n:"엽기닭발",d:"맵고 쫄깃하게, 주먹밥은 필수"},
+  {n:"단새우회 + 안키모",d:"쿠팡 배송, 사케랑 찰떡"},
+  {n:"족발",d:"배달로 편하게, 막국수 추가?"},
+  {n:"회 + 백골뱅이탕",d:"회는 배달, 백골뱅이탕은 쿠팡"}
+];
+const CUISINE_INFO = {"한식":"고기 · 곱창 · 소주","중식":"고량주 · 칭따오","일식":"회 · 사케 · 하이볼"};
+
+let S = {name:"",where:null,cuisine:null,place:null,home:null,menu:null};
+let step = "name";
+const T = document.getElementById("ticket");
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function crumbs(){
+  const c=[];
+  if(S.name) c.push(S.name);
+  if(S.where) c.push(S.where==="out"?"밖에서":"집에서");
+  if(S.cuisine) c.push(S.cuisine);
+  if(S.home) c.push(S.home);
+  return `<div class="crumbs">${c.map(x=>`<span class="crumb">${esc(x)}</span>`).join("")}</div>`;
+}
+function back(to){return `<button class="btn ghost" data-back="${to}">← 뒤로</button>`}
+
+function render(){
+  let h = crumbs();
+  if(step==="name"){
+    h+=`<h2>누가 고르는 중이야?</h2>
+    <input type="text" id="who" maxlength="10" placeholder="이름 또는 별명" value="${esc(S.name)}">
+    <div class="row"><button class="btn" id="go">시작!</button></div>`;
+  } else if(step==="where"){
+    h+=`<h2>어디서 마실까?</h2>
+    <div class="grid">
+      <button class="opt" data-where="out"><span class="big">밖에서 먹는다</span><span class="small">고양시 낮 12시 오픈 식당</span></button>
+      <button class="opt" data-where="home"><span class="big">집에서 먹는다</span><span class="small">일하집 or 지연집</span></button>
+    </div><div class="row">${back("name")}</div>`;
+  } else if(step==="cuisine"){
+    h+=`<h2>뭐 먹을까?</h2><div class="grid">`+
+      Object.keys(PLACES).map(k=>`<button class="opt" data-cuisine="${k}"><span class="big">${k}</span><span class="small">${CUISINE_INFO[k]} · ${PLACES[k].length}곳</span></button>`).join("")+
+      `</div><div class="row">${back("where")}</div>`;
+  } else if(step==="place"){
+    h+=`<h2>${S.cuisine} 맛집 골라!</h2><p class="hint">일요일 12시에 문 여는 곳만 모았어요</p><div class="list">`+
+      PLACES[S.cuisine].map((p,i)=>`<button class="opt" data-place="${i}"><span class="num">${i+1}</span><span class="txt">
+        <span class="name">${esc(p.n)} <span class="tag">${esc(p.t)}</span></span>
+        <span class="hours">일 ${p.h}${p.w?` <span class="warn">· ${p.w}</span>`:""}</span>
+        <span class="small">${esc(p.a)} · ${esc(p.d)}</span></span></button>`).join("")+
+      `</div><div class="row">${back("cuisine")}</div>`;
+  } else if(step==="home"){
+    h+=`<h2>누구네 집으로?</h2><div class="grid">`+
+      HOMES.map(x=>`<button class="opt" data-home="${x}"><span class="big">${x}</span><span class="small">${x==="일하집"?"일하네로 출동":"지연이네로 출동"}</span></button>`).join("")+
+      `</div><div class="row">${back("where")}</div>`;
+  } else if(step==="menu"){
+    h+=`<h2>안주는 뭘로?</h2><div class="list">`+
+      MENUS.map((m,i)=>`<button class="opt" data-menu="${i}"><span class="num">${i+1}</span><span class="txt"><span class="name">${esc(m.n)}</span><span class="small">${esc(m.d)}</span></span></button>`).join("")+
+      `</div><div class="row">${back("home")}</div>`;
+  } else if(step==="result"){
+    h+=`<h2>${esc(S.name||"나")}의 선택 완료!</h2>
+    <img id="resultImg" alt="선택 결과 카드">
+    <div class="row"><button class="btn" id="save">이미지 저장하기</button><button class="btn ghost" id="again">다시 고르기</button></div>
+    <p class="toast" id="toast"></p>`;
+  }
+  T.innerHTML=h;
+  wire();
+  if(step==="result") drawResult();
+  const f=T.querySelector("input,.opt");
+  if(step==="name"&&f) f.focus();
+}
+
+function wire(){
+  const go=()=>{S.name=(document.getElementById("who").value||"").trim()||"익명의 술꾼";step="where";render()};
+  const g=document.getElementById("go");
+  if(g){g.onclick=go;document.getElementById("who").onkeydown=e=>{if(e.key==="Enter")go()}}
+  T.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>{step=b.dataset.back;render()});
+  T.querySelectorAll("[data-where]").forEach(b=>b.onclick=()=>{S.where=b.dataset.where;S.cuisine=S.place=S.home=S.menu=null;step=S.where==="out"?"cuisine":"home";render()});
+  T.querySelectorAll("[data-cuisine]").forEach(b=>b.onclick=()=>{S.cuisine=b.dataset.cuisine;step="place";render()});
+  T.querySelectorAll("[data-place]").forEach(b=>b.onclick=()=>{S.place=PLACES[S.cuisine][+b.dataset.place];step="result";render()});
+  T.querySelectorAll("[data-home]").forEach(b=>b.onclick=()=>{S.home=b.dataset.home;step="menu";render()});
+  T.querySelectorAll("[data-menu]").forEach(b=>b.onclick=()=>{S.menu=MENUS[+b.dataset.menu];step="result";render()});
+  const a=document.getElementById("again");
+  if(a) a.onclick=()=>{S={name:S.name,where:null,cuisine:null,place:null,home:null,menu:null};step="where";render()};
+  const sv=document.getElementById("save");
+  if(sv) sv.onclick=saveImg;
+}
+
+/* ---------- cute soju mascot ---------- */
+function drawSoju(ctx,x,y,s,mood){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  // bottle neck + cap
+  ctx.fillStyle="#3fae7a";rr(ctx,-11,-78,22,14,5);ctx.fill();
+  ctx.fillStyle="#bfe9d2";rr(ctx,-13,-66,26,26,6);ctx.fill();
+  // body
+  ctx.fillStyle="#d6f3e3";rr(ctx,-34,-46,68,94,24);ctx.fill();
+  ctx.strokeStyle="#3fae7a";ctx.lineWidth=4;rr(ctx,-34,-46,68,94,24);ctx.stroke();
+  // label
+  ctx.fillStyle="#3fae7a";rr(ctx,-34,8,68,24,4);ctx.fill();
+  ctx.fillStyle="#fff";ctx.font="bold 17px Gaegu, sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("낮술",0,21);
+  // face
+  ctx.fillStyle="#3a2a22";
+  if(mood==="happy"){ctx.lineWidth=3.5;ctx.strokeStyle="#3a2a22";ctx.beginPath();ctx.arc(-12,-16,5,Math.PI*1.1,Math.PI*1.9);ctx.stroke();ctx.beginPath();ctx.arc(12,-16,5,Math.PI*1.1,Math.PI*1.9);ctx.stroke();}
+  else{ctx.beginPath();ctx.arc(-12,-16,4.5,0,7);ctx.arc(12,-16,4.5,0,7);ctx.fill();}
+  ctx.beginPath();ctx.lineWidth=3;ctx.strokeStyle="#3a2a22";ctx.arc(0,-8,6,0.15*Math.PI,0.85*Math.PI);ctx.stroke();
+  ctx.fillStyle="rgba(255,143,107,.55)";ctx.beginPath();ctx.ellipse(-22,-6,7,4.5,0,0,7);ctx.ellipse(22,-6,7,4.5,0,0,7);ctx.fill();
+  ctx.restore();
+}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function wrapText(ctx,text,x,y,maxW,lh){
+  const words=text.split(" ");let line="",lines=[];
+  for(const w of words){const t=line?line+" "+w:w;if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w}else line=t}
+  if(line)lines.push(line);
+  lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lh));return lines.length;
+}
+
+let lastBlob=null;
+async function drawResult(){
+  try{await Promise.all([document.fonts.load('bold 40px Gaegu'),document.fonts.load('20px "Gowun Dodum"')])}catch(e){}
+  const W=900,H=1200,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+  const out=S.where==="out";
+  const main=out?"#ff8f6b":"#3fae7a", soft=out?"#ffe3d8":"#dff3e8";
+  // background dots
+  x.fillStyle="#fff5c8";x.fillRect(0,0,W,H);
+  x.fillStyle="#f6e7a6";for(let i=0;i<W;i+=36)for(let j=0;j<H;j+=36){x.beginPath();x.arc(i+18,j+18,2.4,0,7);x.fill()}
+  // confetti
+  const cols=["#ff8f6b","#3fae7a","#ffffff","#8ecae6","#f4a6c1"];
+  let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  for(let i=0;i<46;i++){x.save();x.translate(rnd()*W,rnd()*H);x.rotate(rnd()*6);x.fillStyle=cols[i%5];x.globalAlpha=.75;rr(x,-9,-4,18,8,4);x.fill();x.restore()}
+  // card
+  x.fillStyle="rgba(120,70,40,.16)";rr(x,70,190,760,880,44);x.fill();
+  x.fillStyle="#fffdf3";rr(x,60,170,760,880,44);x.fill();
+  x.strokeStyle="#ecd9c6";x.lineWidth=5;rr(x,60,170,760,880,44);x.stroke();
+  // ticket notches
+  x.fillStyle="#fff5c8";x.beginPath();x.arc(60,560,26,0,7);x.arc(820,560,26,0,7);x.fill();
+  x.setLineDash([14,12]);x.strokeStyle="#ecd9c6";x.lineWidth=4;x.beginPath();x.moveTo(100,560);x.lineTo(780,560);x.stroke();x.setLineDash([]);
+  // header title
+  x.textAlign="center";x.textBaseline="alphabetic";
+  x.fillStyle="#3a2a22";x.font="bold 81px Gaegu, sans-serif";x.fillText("일요일 낮술 약속",W/2,118);
+  x.fillStyle="#8a7366";x.font="30px 'Gowun Dodum', sans-serif";x.fillText("고양시 · 낮 12시 땡!",W/2,160);
+  // mascots
+  drawSoju(x,170,360,1.55,"happy");
+  drawSoju(x,730,360,1.55,"dot");
+  // name badge
+  x.fillStyle=main;rr(x,290,232,320,64,32);x.fill();
+  x.fillStyle="#fff";x.font="bold 40px Gaegu, sans-serif";x.fillText(`${S.name}의 선택`,W/2,276);
+  x.fillStyle="#3a2a22";x.font="bold 49px Gaegu, sans-serif";
+  x.fillText(out?"밖에서 먹는다!":"집에서 먹는다!",W/2,370);
+  x.fillStyle=soft;rr(x,330,400,240,56,28);x.fill();
+  x.fillStyle=main;x.font="bold 36px Gaegu, sans-serif";
+  x.fillText(out?S.cuisine:S.home,W/2,440);
+  x.fillStyle="#8a7366";x.font="26px 'Gowun Dodum', sans-serif";
+  x.fillText(out?CUISINE_INFO[S.cuisine]+" 준비 완료":"편한 옷 입고 와도 됨",W/2,510);
+  // lower half
+  if(out){
+    const p=S.place;
+    x.fillStyle="#8a7366";x.font="bold 31px Gaegu, sans-serif";x.fillText("오늘의 술집",W/2,640);
+    x.fillStyle="#3a2a22";x.font="bold 69px Gaegu, sans-serif";
+    const n=wrapText(x,p.n,W/2,720,640,72);
+    let y=720+(n-1)*72+70;
+    x.fillStyle=main;x.font="bold 38px Gaegu, sans-serif";x.fillText("일요일 "+p.h,W/2,y);y+=56;
+    x.fillStyle="#3a2a22";x.font="30px 'Gowun Dodum', sans-serif";x.fillText("["+p.t+"] "+p.a,W/2,y);y+=48;
+    x.fillStyle="#8a7366";x.fillText(p.d,W/2,y);
+    if(p.w){y+=50;x.fillStyle="#ff8f6b";x.font="bold 29px Gaegu, sans-serif";x.fillText("※ "+p.w,W/2,y)}
+  } else {
+    const m=S.menu;
+    x.fillStyle="#8a7366";x.font="bold 31px Gaegu, sans-serif";x.fillText("오늘의 안주",W/2,640);
+    x.fillStyle="#3a2a22";x.font="bold 74px Gaegu, sans-serif";
+    const n=wrapText(x,m.n,W/2,730,640,76);
+    let y=730+(n-1)*76+70;
+    x.fillStyle=main;x.font="bold 38px Gaegu, sans-serif";x.fillText(S.home+"에서 만나!",W/2,y);y+=56;
+    x.fillStyle="#8a7366";x.font="30px 'Gowun Dodum', sans-serif";x.fillText(m.d,W/2,y);
+  }
+  // stamp
+  x.save();x.translate(705,970);x.rotate(-0.22);
+  x.strokeStyle="#ff8f6b";x.lineWidth=6;x.beginPath();x.arc(0,0,72,0,7);x.stroke();
+  x.lineWidth=2.5;x.beginPath();x.arc(0,0,60,0,7);x.stroke();
+  x.fillStyle="#ff8f6b";x.font="bold 38px Gaegu, sans-serif";x.textBaseline="middle";x.fillText("확정",0,-10);
+  x.font="bold 22px Gaegu, sans-serif";x.fillText("번복 불가",0,24);x.restore();
+  // footer
+  x.textBaseline="alphabetic";x.fillStyle="#8a7366";x.font="26px 'Gowun Dodum', sans-serif";
+  x.fillText("짠! 일요일에 보자~",W/2,1140);
+  c.toBlob(b=>{lastBlob=b;const img=document.getElementById("resultImg");if(img)img.src=URL.createObjectURL(b)},"image/png");
+}
+
+let dl=null;
+(async()=>{try{dl=window.claude?.use?await window.claude.use("downloads"):null}catch(e){dl=null}})();
+async function saveImg(){
+  const t=document.getElementById("toast");
+  if(!lastBlob){t.textContent="이미지를 만드는 중이에요. 잠깐만!";return}
+  const fname=`낮술약속_${S.name}.png`;
+  if(dl){
+    try{await dl.save({filename:fname,data:lastBlob});t.textContent="저장했어요! 단톡방에 올려요.";}
+    catch(e){t.textContent=e&&e.code==="declined"?"저장을 취소했어요.":"여기선 바로 저장이 안 돼요. 위 이미지를 길게 누르거나 우클릭해서 저장하세요.";}
+  } else t.textContent="위 이미지를 길게 누르거나(폰) 우클릭해서(PC) 저장하세요.";
+}
+
+// header mascot
+(async()=>{try{await document.fonts.load('bold 15px Gaegu')}catch(e){}
+  const m=document.getElementById("mascot").getContext("2d");m.clearRect(0,0,168,168);drawSoju(m,84,96,1.05,"happy")})();
+render();
+</script>
+
+</body></html>
